@@ -9,7 +9,7 @@
 Router firmware analysis tool for educational research - **completely free**.
 
 ## 📱 Supported Devices
-* **ZLT-S20 Series** - Full compatibility
+* **ZLT-S20 Series** - compatibility
 * **237-BASE Series** - Full compatibility
 
 ## 🚀 Installation
