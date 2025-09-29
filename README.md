@@ -1,4 +1,4 @@
-# ZLT-S20-UNLOCKER - Coming Soon
+# ZLT-S20-UNLOCKER
 
 <div align="center" style="display: flex; justify-content: center; align-items: flex-end; gap: 10px;">
   <img src="https://github.com/user-attachments/assets/9aeff6c9-e43e-4c7b-bb36-22e94ee59a0b" alt="S20 Router" width="400" />
