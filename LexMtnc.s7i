@@ -1,0 +1,10 @@
+
+# MTN - inherits from BASEDEVICE
+const type: MTNCDEVICE is sub BASEDEVICE struct
+end struct;
+
+# Override methods for MTN
+const proc: (in MTNCDEVICE: device) ->  testLink  is func
+    begin
+        writeln("MTN model test for " <& device.deviceId <& " with MTN_DATA");
+    end func;
