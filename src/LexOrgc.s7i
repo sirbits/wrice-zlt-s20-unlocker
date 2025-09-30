@@ -1,0 +1,11 @@
+
+
+# Orange - inherits from BASEDEVICE
+const type: ORGCDEVICE is sub BASEDEVICE struct
+end struct;
+
+# Override methods for Orange
+const proc:  (in ORGCDEVICE: device) -> testLink is func
+    begin
+        writeln("ORANGE model test for " <& device.deviceId);
+    end func;

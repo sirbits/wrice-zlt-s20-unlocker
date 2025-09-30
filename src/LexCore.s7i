@@ -1,0 +1,47 @@
+
+#Basic Data
+const type: BASEDEVICE is new struct
+    var string    : deviceId is "";
+    var string    : hostAddr is "192.168.1.1";
+    var integer   : hostPort is 443;
+    var file      : hostSock is STD_NULL;
+    var string    : rqstMode is "";
+    var string    : rqstBody is "";
+    var hash [string] string    : rqstData is [](["":""]);
+    var array string    : hostHead is []("Host: 192.168.1.1", "User-Agent: LexCore/0.1");
+end struct;
+
+# Default implementations for BASEDEVICE
+const proc: (inout BASEDEVICE: self) -> initLink is func
+    begin
+    end func;
+
+const proc: (inout BASEDEVICE: self) -> openLink is func
+    begin
+        self.hostSock := openTlsSocket(self.hostAddr, self.hostPort);
+    end func;
+
+const func boolean: (in BASEDEVICE: self) -> haveLink is func
+    result
+        var boolean: connected is FALSE;
+    begin
+        connected := self.hostSock <> STD_NULL;
+    end func;
+
+const proc: (inout BASEDEVICE: self) -> dropLink  is func
+    begin
+        if self.hostSock <> STD_NULL then
+            close(self.hostSock);
+            self.hostSock := STD_NULL;
+        end if;
+    end func;
+
+const proc:  (inout BASEDEVICE: device) -> authLink is func
+    begin
+        writeln("not implemented");
+    end func;
+
+const proc: (in BASEDEVICE: device) -> testLink  is func
+    begin
+        writeln("Testing " <& device.deviceId);
+    end func;
