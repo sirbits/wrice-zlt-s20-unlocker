@@ -8,3 +8,27 @@ const proc: (in MTNCDEVICE: device) ->  testLink  is func
     begin
         writeln("MTN model test for " <& device.deviceId <& " with MTN_DATA");
     end func;
+
+const proc:  (inout MTNCDEVICE: self) -> authLink is func
+
+    begin
+        self.rqstBody.xapi := TRUE;
+        self.rqstBody.mode := "POST";
+        self.rqstBody.data @:= ["goformId"] "LOGIN";
+        self.rqstBody.data @:= ["username"] "admin";
+        self.rqstBody.data @:= ["password"] "admin";
+        
+        self -> sendRqst;
+        self -> recvResp; 
+       
+
+        
+
+        
+        
+        #writeln(self.respBody.code);
+        #writeln(self.respBody.resp);
+        
+        
+
+    end func;
