@@ -16,22 +16,24 @@ const proc: main is func
         org.deviceId := "ORG001";
 
         writeln("=== MTN Device ===");
-        mtn -> testLink; 
+        #mtn -> testLink; 
         mtn -> openLink; 
-        mtn -> authLink;
+        #mtn -> authLink;
         if mtn -> haveLink then
-            writeln("connected");
+            writeln("connected to " <& mtn.hostAddr <& ":" <& mtn.hostPort);
             mtn.rqstMode := "GET";
+            mtn.rqstPath := "/index.html";
+            mtn.rqstRapi := TRUE;
+            mtn.rqstData @:= ["cmd"] "tz_version,tz_version_type";
 
-            writeln(mtn.rqstMode);
-            mtn.rqstData @:= ["cmd"] "kdka";
+            
 
-            writeln(mtn.rqstData["cmd"]);
+            #writeln(mtn.rqstData["cmd"]);
+            #writeln(values(mtn.rqstData));
+            mtn -> sendRqst;
+        else
+            writeln("not connected")
+
         end if; 
         mtn -> dropLink;
-
-        
-        
-
-
     end func;
