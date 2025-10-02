@@ -1,0 +1,205 @@
+$ include "seed7_05.s7i";
+$ include "tls.s7i"; 
+#$ include "hash.s7i";
+
+# Base struct with common data
+#var type      : rqstData is  hash [string] string;
+const type: BASEDEVICE is new struct
+    var string    : deviceId is "";
+    var string    : hostAddr is "192.168.1.1";
+    var integer   : hostPort is 443;
+    var file      : hostSock is STD_NULL;
+    var string    : rqstMode is "";
+    var string    : rqstBody is "";
+    var hash [string] string    : rqstData is [](["":""]);
+    var array string    : hostHead is []("Host: 192.168.1.1", "User-Agent: LexCore/0.1");
+end struct;
+
+# Default implementations for BASEDEVICE
+const proc: (inout BASEDEVICE: self) -> initLink is func
+    begin
+    end func;
+
+const proc: (inout BASEDEVICE: self) -> openLink is func
+    begin
+        self.hostSock := openTlsSocket(self.hostAddr, self.hostPort);
+    end func;
+
+const func boolean: (in BASEDEVICE: self) -> haveLink is func
+    result
+        var boolean: connected is FALSE;
+    begin
+        connected := self.hostSock <> STD_NULL;
+    end func;
+
+const proc: (inout BASEDEVICE: self) -> dropLink  is func
+    begin
+        if self.hostSock <> STD_NULL then
+            close(self.hostSock);
+            self.hostSock := STD_NULL;
+        end if;
+    end func;
+
+const proc: (in BASEDEVICE: device) -> testLink  is func
+    begin
+        writeln("Testing " <& device.deviceId);
+    end func;
+
+const proc:  (inout BASEDEVICE: device) -> authLink is func
+    begin
+        writeln("not implemented");
+    end func;
+
+# MTN - inherits from BASEDEVICE
+const type: MTNCDEVICE is sub BASEDEVICE struct
+end struct;
+
+# Override methods for MTN
+const proc: (in MTNCDEVICE: device) ->  testLink  is func
+    begin
+        writeln("MTN model test for " <& device.deviceId <& " with MTN_DATA");
+    end func;
+
+# Orange - inherits from BASEDEVICE
+const type: ORGCDEVICE is sub BASEDEVICE struct
+end struct;
+
+# Override methods for Orange
+const proc:  (in ORGCDEVICE: device) -> testLink is func
+    begin
+        writeln("ORANGE model test for " <& device.deviceId);
+    end func;
+
+
+# Main program
+const proc: main is func
+    local
+        var MTNCDEVICE: mtn is  MTNCDEVICE.value;
+        var ORGCDEVICE: org is  ORGCDEVICE.value;
+
+    begin
+        mtn.deviceId := "MTN001";
+        org.deviceId := "ORG001";
+
+        writeln("=== MTN Device ===");
+        mtn -> testLink; 
+        mtn -> openLink; 
+        mtn -> authLink;
+        if mtn -> haveLink then
+            writeln("connected");
+            mtn.rqstMode := "GET";
+
+            writeln(mtn.rqstMode);
+            mtn.rqstData @:= ["cmd"] "kdka";
+
+            writeln(mtn.rqstData["cmd"]);
+        end if; 
+        mtn -> dropLink;
+
+        
+        
+
+
+    end func;
+(*
+    GET {rqstPath} HTTP/1.1\r\n
+    {rqstHead}
+
+    {rqstBody}
+*)
+
+(*
+const type: clientSock is new struct
+    var string  : hostAddr  is "192.168.1.1";
+    var integer : hostPort  is 443;
+    var file    : tlsSock  is STD_NULL;
+    var array string : headers   is []("Host: 192.168.1.1", "User-Agent: LexCore/0.1");
+end struct;
+
+const proc: (inout clientSock: self) -> openLink  is func
+    begin
+        self.tlsSock := openTlsSocket(self.hostAddr, self.hostPort);
+    end func;
+
+const proc: (inout clientSock: self) -> shutLink is func
+    begin
+        if self.tlsSock <> STD_NULL then
+            close(self.tlsSock);
+            self.tlsSock := STD_NULL;
+        end if;
+    end func;
+
+const func boolean: (in clientSock: self) -> isOpen is func
+    result
+        var boolean: connected is FALSE;
+    begin
+        connected := self.tlsSock <> STD_NULL;
+    end func;
+
+const proc: (inout clientSock: self) (in string: message) -> isTest is func
+
+    begin
+        writeln(message);
+    end func;
+
+
+const proc: main is func
+    local
+        var clientSock: client is clientSock.value;
+    begin
+        writeln("Initial connection: " <& client -> isOpen());
+
+        # Connect to default host/port ("192.168.1.1", 443)
+        client.headers  &:=   "some:header";
+        write(client.headers[1]);
+        client -> openLink();
+        writeln("Connected: " <& client -> isOpen());
+
+        client -> shutLink();
+        writeln("After close: " <& client -> isOpen());
+
+        client("message") -> isTest;
+
+    end func;
+
+*)
+
+
+(*
+const func file: openConnection(in string: hostAddr, in integer: hostPort)  is func
+  result
+    var file: tlsSock is STD_NULL;
+  begin
+    tlsSock := openTlsSocket(hostAddr, hostPort);
+  end func;
+
+
+const proc: main  is func
+    local
+        const string : hostAddr is "192.168.1.1";
+        const integer: hostPort is 443;
+        const string : userAstr is "LexCore";
+        var file     : atlsSock is STD_NULL;
+        var string   : gRequest is "GET /index.html HTTP/1.1\r\n" &
+                                   "Host: " & hostAddr & "\r\n" &
+                                   "User-Agent: "& userAstr &"\r\n\r\n";  
+        var string   : line is ""; 
+        var integer  : c is 0;
+
+    begin
+        atlsSock := openTlsSocket(hostAddr,hostPort);
+        if atlsSock <> STD_NULL then
+            writeln("connection opened");
+            write(atlsSock, gRequest);
+            #write(getln(atlsSock));
+            while not eof(atlsSock) do
+                line := line & getln(atlsSock) & "\r\n";
+                #writeln(line);
+            end while;
+            writeln(line);
+        else
+            writeln("connection error");
+        end if;
+
+    end func;
+*)
