@@ -6,9 +6,13 @@ const type: BASEDEVICE is new struct
     var integer   : hostPort is 443;
     var file      : hostSock is STD_NULL;
     var string    : rqstMode is "";
-    var string    : rqstBody is "";
-    var hash [string] string    : rqstData is [](["":""]);
-    var array string    : hostHead is []("Host: 192.168.1.1", "User-Agent: LexCore/0.1");
+    var string    : rqstBody is "";                           
+    var string    : rqstPath is "";                           #USED IF API SWITCH IS FALSE
+    var boolean   : rqstRapi is FALSE;                        #API SWITCH
+    var string    : getEndpt is "/reqproc/proc_get";          #API GET  ENDPOINT
+    var string    : pstEndpt is "/reqproc/proc_post";         #API POST ENDPOINT
+    var hash [string] string    : rqstData is [](["":""]);    #API DATA
+    var hash [string] string    : rqstHead is [](["Host":hostAddr],["User-Agent":"LexCore/0.1"]);
 end struct;
 
 # Default implementations for BASEDEVICE
@@ -39,6 +43,62 @@ const proc: (inout BASEDEVICE: self) -> dropLink  is func
 const proc:  (inout BASEDEVICE: device) -> authLink is func
     begin
         writeln("not implemented");
+    end func;
+
+
+
+const func string: (inout BASEDEVICE: self) -> makeRqst is func
+    result 
+        var string: rqstCall is "";
+    local
+        var string: rqstLine is "";
+        var string: rqstHead is "";
+        var string: loopHkey is "";
+        var string: loopHval is "";
+        var string: tempData is "";
+    begin
+        
+
+
+        if self.rqstMode = "GET"  then
+            #need error handling here
+            if self.rqstRapi = TRUE and "cmd" in self.rqstData then
+                tempData := "isTest=false&";
+                if pos(self.rqstData["cmd"],",") > 0 ? TRUE : FALSE then
+                    tempData &:= "multi_data=1&"
+                end if;
+                self.rqstPath := self.getEndpt & "?" & tempData & "cmd=" & self.rqstData["cmd"];
+            end if;
+            
+        elsif self.rqstMode = "POST" then
+            writeln("got a pst request");
+            #ToDo
+        else
+            writeln("got a nil request");
+        end if;
+
+        rqstLine := self.rqstMode & " " &  self.rqstPath & " " & "HTTP/1.1\r\n";
+
+        for loopHval key loopHkey range self.rqstHead do
+            rqstHead &:= loopHkey & ":" & loopHval & "\r\n";
+        end for;
+
+        rqstCall := rqstLine & rqstHead & "\r\n";
+    end func;
+
+
+const proc: (inout BASEDEVICE: device) -> sendRqst is func
+    local
+        var string : line is "";
+        var string : rqst is "";
+    begin
+        rqst := device -> makeRqst;
+
+        write(device.hostSock, rqst);
+        while not eof(device.hostSock) do
+            line := line & getln(device.hostSock) & "\r\n";
+        end while;
+        writeln(line);
     end func;
 
 const proc: (in BASEDEVICE: device) -> testLink  is func
