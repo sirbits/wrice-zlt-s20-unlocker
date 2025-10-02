@@ -1,1 +1,8 @@
-*.s7d linguist-language=Seed7
+# Force GitHub to recognize Seed7 files
+*.s7i linguist-language=Seed7
+*.sd7 linguist-language=Seed7
+
+# Optional: ignore non-code directories
+vendor/* linguist-vendored
+node_modules/* linguist-vendored
+build/* linguist-vendored
