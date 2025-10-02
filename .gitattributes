@@ -1,8 +1,11 @@
-# Force GitHub to recognize Seed7 files
-*.s7i linguist-language=Seed7
-*.sd7 linguist-language=Seed7
+# ----- Seed7 files -----
+# Treat module files (*.s7i) as Seed7 (stats) and highlight using Pascal
+*.s7i linguist-language=Seed7 linguist-detectable
 
-# Optional: ignore non-code directories
+# Treat main files (*.sd7) as Seed7 (stats) and highlight using Pascal
+*.sd7 linguist-language=Seed7 linguist-detectable
+
+# ----- Ignore non-code directories -----
 vendor/* linguist-vendored
 node_modules/* linguist-vendored
 build/* linguist-vendored
