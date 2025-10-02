@@ -1,18 +1,35 @@
 
 #Basic Data
+const type: DEVICERESP is new struct
+    var string : body is "";
+    var string : code is "";
+    var string : resp is "";
+end struct;
+
+const type: DEVICERQST is new struct
+    var string  : host is "192.168.1.1";
+    var boolean : xapi is FALSE;
+    var string  : mode is "";
+    var string  : body is "";
+    var string  : path is "";
+    var string  : gapi is "/reqproc/proc_get";     #GET  ENDPOINT
+    var string  : papi is "/reqproc/proc_post";    #POST ENDPOINT
+    var hash [string] string    : head is [](["Host":host],["User-Agent":"LexCore/0.1"]);
+    var hash [string] string    : data is [](["":""]);
+
+    
+end struct;
+
 const type: BASEDEVICE is new struct
     var string    : deviceId is "";
     var string    : hostAddr is "192.168.1.1";
     var integer   : hostPort is 443;
     var file      : hostSock is STD_NULL;
     var string    : rqstMode is "";
-    var string    : rqstBody is "";                           
-    var string    : rqstPath is "";                           #USED IF API SWITCH IS FALSE
-    var boolean   : rqstRapi is FALSE;                        #API SWITCH
-    var string    : getEndpt is "/reqproc/proc_get";          #API GET  ENDPOINT
-    var string    : pstEndpt is "/reqproc/proc_post";         #API POST ENDPOINT
-    var hash [string] string    : rqstData is [](["":""]);    #API DATA
-    var hash [string] string    : rqstHead is [](["Host":hostAddr],["User-Agent":"LexCore/0.1"]);
+
+    var DEVICERESP: respBody is DEVICERESP.value; 
+    var DEVICERQST: rqstBody is DEVICERQST.value;                          
+
 end struct;
 
 # Default implementations for BASEDEVICE
@@ -40,7 +57,7 @@ const proc: (inout BASEDEVICE: self) -> dropLink  is func
         end if;
     end func;
 
-const proc:  (inout BASEDEVICE: device) -> authLink is func
+const proc:  (inout BASEDEVICE: self) -> authLink is func
     begin
         writeln("not implemented");
     end func;
@@ -57,49 +74,94 @@ const func string: (inout BASEDEVICE: self) -> makeRqst is func
         var string: loopHval is "";
         var string: tempData is "";
     begin
-        
-
-
-        if self.rqstMode = "GET"  then
+        if self.rqstBody.mode = "GET"  then
             #need error handling here
-            if self.rqstRapi = TRUE and "cmd" in self.rqstData then
+            if self.rqstBody.xapi = TRUE and "cmd" in self.rqstBody.data then
                 tempData := "isTest=false&";
-                if pos(self.rqstData["cmd"],",") > 0 ? TRUE : FALSE then
+                if pos(self.rqstBody.data["cmd"],",") > 0 ? TRUE : FALSE then
                     tempData &:= "multi_data=1&"
                 end if;
-                self.rqstPath := self.getEndpt & "?" & tempData & "cmd=" & self.rqstData["cmd"];
+                self.rqstBody.path := self.rqstBody.gapi & "?" & tempData & "cmd=" & self.rqstBody.data["cmd"];
             end if;
             
-        elsif self.rqstMode = "POST" then
+        elsif self.rqstBody.mode = "POST" then
+            self.rqstBody.head @:= ["Content-Type"] "application/json";
+
+            if self.rqstBody.xapi = TRUE and "goformId" in self.rqstBody.data then
+                self.rqstBody.path := self.rqstBody.papi;
+                tempData := "isTest=false";
+                for loopHval key loopHkey range self.rqstBody.data do
+                    if loopHkey <> "" then
+                        tempData &:= "&" & loopHkey & "=" <& loopHval; 
+                    end if;
+                end for;
+                self.rqstBody.body := tempData;
+                writeln(tempData);
+            #raw post not implemented
+            end if;
+            
             writeln("got a pst request");
             #ToDo
+            self.rqstBody.head @:= ["Content-Length"] str(length(tempData));
+
         else
             writeln("got a nil request");
         end if;
 
-        rqstLine := self.rqstMode & " " &  self.rqstPath & " " & "HTTP/1.1\r\n";
-
-        for loopHval key loopHkey range self.rqstHead do
+        rqstLine := self.rqstBody.mode & " " &  self.rqstBody.path & " " & "HTTP/1.1\r\n";
+        for loopHval key loopHkey range self.rqstBody.head do
             rqstHead &:= loopHkey & ":" & loopHval & "\r\n";
         end for;
 
-        rqstCall := rqstLine & rqstHead & "\r\n";
+        if self.rqstBody.mode = "GET" then
+            rqstCall := rqstLine & rqstHead & "\r\n";
+        elsif self.rqstBody.mode = "POST" then
+            rqstCall := rqstLine & rqstHead & "\r\n" &  self.rqstBody.body & "\r\n\r\n";
+            
+        end if;
     end func;
 
 
-const proc: (inout BASEDEVICE: device) -> sendRqst is func
+const proc: (inout BASEDEVICE: self) -> sendRqst is func
     local
-        var string : line is "";
         var string : rqst is "";
     begin
-        rqst := device -> makeRqst;
-
-        write(device.hostSock, rqst);
-        while not eof(device.hostSock) do
-            line := line & getln(device.hostSock) & "\r\n";
-        end while;
-        writeln(line);
+        rqst := self -> makeRqst;
+        write(self.hostSock, rqst);
     end func;
+
+const proc: (inout BASEDEVICE: self) -> recvResp is func
+
+    local
+        var string : line is "";
+        var string : code is "";
+        var string : data is "";
+    begin
+        while not eof(self.hostSock) do
+            line &:=  gets(self.hostSock, 1024);
+        end while;
+
+        self.respBody.body := line;
+
+        code := split(self.respBody.body[1 .. pos(self.respBody.body, "\r\n")]," ")[2];
+        data := self.respBody.body[pos(self.respBody.body, "\r\n\r\n") + length("\r\n\r\n") .. ];
+
+        if self.rqstBody.xapi = TRUE then
+            data := self.respBody.body[pos(self.respBody.body, "\n\n") + length("\n\n") .. ];
+
+        end if;
+        
+        if self.rqstBody.xapi = TRUE then
+            #ToDo json the data
+            writeln(code);
+            writeln(data);
+        end if;
+
+        self.respBody.code := code;
+        self.respBody.resp := data;
+        
+    end func;
+
 
 const proc: (in BASEDEVICE: device) -> testLink  is func
     begin
